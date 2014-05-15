@@ -65,3 +65,20 @@ will return
 }
 ```
 
+## Using on the command line
+
+The python client also has a command-line interface that allows to call its essential functions.
+
+```bash
+COMPANY_TOKEN='12345678-90ab-cdef-1234-567890abcdef'
+CUSTOMER='john123'
+
+# Track event
+./seven_segments.py track "$COMPANY_TOKEN" "$CUSTOMER" purchase --properties product=bottle amount=5
+
+# Update customer properties
+./seven_segments.py update "$COMPANY_TOKEN" "$CUSTOMER" first_name=John last_name=Smith
+
+# Evaluate automated campaign
+./seven_segments.py evaluate "$COMPANY_TOKEN" "$CUSTOMER" campaign1 campaign2
+```
