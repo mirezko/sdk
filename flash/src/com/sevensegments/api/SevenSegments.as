@@ -13,6 +13,7 @@
 		private const ONLINE_CHECK_DELAY = 10 * 60; // 10 min
 		
 		private var initialized:Boolean = false;
+		private var timeInitialized:Boolean = false;
 		private var config:Object;
 		private var defaultProperties = {};
 		private var processing = false;
@@ -21,6 +22,14 @@
 		private var isOnline:Boolean = true;
 		private var onlineCheckTimer:Timer = null;
 		private var lastCommand:Function = null;
+		private var resendTimeoutBase = 1000;
+		private var resendTimeout = resendTimeoutBase;
+		private var resendTimeoutFactor = 2;
+		private var resendTimeoutMax = 60 * 60 * 1000;
+		private var lastUsedTimestamp = null;
+		private var duplicateTimestampIncrement = 0.001;
+		private var timestampOffset = 0; // server timestamp - client timestamp
+		private var resendTimer:Timer = null;
 		
 		public function SevenSegments() {
 			this.initialized = false;
@@ -35,7 +44,8 @@
 					interval: 2 * 60,
 					properties: {}
 				},
-				debug: false
+				debug: false,
+				offlineOnError: false
 			};
 		}
 
@@ -68,12 +78,42 @@
 				processing = false;
 				return;
 			}
-			lastCommand = queue.shift();
+			lastCommand = queue[0];
 			lastCommand();
+		}
+		
+		private function processedSuccess() {
+			queue.shift();
+			resendTimeout = resendTimeoutBase;
+			processNext();
+		}
+		
+		private function retryResend(action:Function) {
+			resendTimeout *= resendTimeoutFactor;
+			if (resendTimeout > resendTimeoutMax) {
+				resendTimeout = resendTimeoutMax;
+			}
+			this.debug('timing out for ' + resendTimeout + ' ms');
+			if (resendTimer != null) {
+				resendTimer.stop();
+				resendTimer = null;
+			}
+			resendTimer = new Timer(resendTimeout, 1);
+			resendTimer.addEventListener('timer', function() {
+				resendTimer.stop();
+				resendTimer = null;
+				action();
+			});
+			resendTimer.start();
+		}
+		
+		private function processedError() {
+			retryResend(processNext);
 		}
 
 		private function processQueue() {
 			if (!isOnline) return;
+			if (!timeInitialized) return;
 			if (processing) return;
 			processing = true;
 			processNext();
@@ -81,9 +121,41 @@
 
 		private function enqueue(processor) {
 			queue.push(function() {
-				processor(processNext);
+				processor(processedSuccess, processedError);
 			});
 			if (initialized) processQueue();
+		}
+		
+		private function queryTime() {
+			if (timeInitialized) return;
+			
+			var clientTS = getTimestamp();
+			
+			var req:URLRequest = new URLRequest();
+			req.method = 'GET';
+			req.url = config.target + '/system/time?clientTS=' + clientTS;
+			
+			loadRequest(req, function(json) {
+				var serverTS = json.time;
+				var clientTS2 = getTimestamp();
+				var avgClientTS = clientTS2 - (clientTS2 - clientTS) / 2;
+				timestampOffset = serverTS - avgClientTS;
+				debug('time offset is ' + timestampOffset);
+				resendTimeout = resendTimeoutBase;
+				timeInitialized = true;
+				processQueue();
+			}, function() {
+				retryResend(queryTime);
+			});
+		}
+		
+		private function getTimestamp():Number {
+			var now:Number = new Date().time / 1000;
+			if (lastUsedTimestamp != null && lastUsedTimestamp >= now) {
+				now = lastUsedTimestamp + duplicateTimestampIncrement;
+			}
+			lastUsedTimestamp = now;
+			return now;
 		}
 
 		private function preProcessCustomerIds(options:Object) {
@@ -121,7 +193,7 @@
 			return req;
 		}
 		
-		private function loadRequest(req:URLRequest, callback:Function) {
+		private function loadRequest(req:URLRequest, successCallback:Function, errorCallback:Function) {
 			var loader:URLLoader = new URLLoader();
 			var httpStatus = null;
 			loader.addEventListener('httpResponseStatus', function(ev) {
@@ -131,30 +203,41 @@
 			loader.addEventListener('complete', function(ev) {
 				debug('Received response: ', loader.data);
 				if (httpStatus !== null && httpStatus != 200) {
-					callback();
-					if (httpStatus == 0) {
+					if (config.offlineOnError && httpStatus == 0) {
 						offline();
 					}
+					errorCallback();
 					return;
 				}
-				callback();
+				var parsed:Object;
+				try {
+					parsed = fromJSON(loader.data);
+				}
+				catch (error:Error) {
+					debug('Error parsing JSON response');
+					errorCallback();
+					return;
+				}
+				successCallback(parsed);
 			});
 			loader.addEventListener('ioError', function(ev) {
 				debug('Cannot connect to server.');
-				offline();
-				callback();
+				if (config.offlineOnError) offline();
+				errorCallback();
 			});
 			loader.addEventListener('securityError', function(ev) {
 				debug('Cannot connect to server due to security error.');
-				callback();
+				errorCallback();
 			});
 			loader.load(req);
 		}
 		
-		private function updateCustomer(customerProperties:Object, callback:Function) {
+		private function updateCustomer(customerProperties:Object, successCallback:Function, errorCallback:Function) {
 			var customer = getCustomerJson(customerProperties);
 			var req:URLRequest = prepareRequest('/crm/customers', customer);
-			loadRequest(req, callback);
+			loadRequest(req, function(data) {
+				successCallback();
+			}, errorCallback);
 		}
 
 		private function debug(message:String, data:* = undefined) {
@@ -188,10 +271,10 @@
 			}
 		}
 		
-		private function pingCallback(callback:Function) {
+		private function pingCallback(successCallback:Function, errorCallback:Function) {
 			sendPing();
 			setupPingTimer();
-			callback();
+			successCallback();
 		}
 		
 		private function setupOnlineCheckTimer() {
@@ -243,7 +326,7 @@
             debug('Initializing', config);
             if (!config.ping.enabled) this.identify(config.customer);
             enqueue(pingCallback);
-            processQueue();
+            queryTime();
         }
 
         public function identify(customerIds:Object = null, customerProperties:Object = null) {
@@ -256,19 +339,19 @@
 				customerIds = {};
 			}
 			if (customerProperties == null) customerProperties = {};
-            enqueue(function(callback) {
+            enqueue(function(successCallback, errorCallback) {
                 customerIds['cookie'] = config.customer.cookie;
                 config.customer = customerIds;
                 debug('Identifying customer: ', customerIds);
                 debug('Updating customer: ', customerProperties);
-                updateCustomer(customerProperties, callback);
+                updateCustomer(customerProperties, successCallback, errorCallback);
             });
         }
 
         public function update(customerProperties:Object) {
-            enqueue(function(callback) {
+            enqueue(function(successCallback, errorCallback) {
                 debug('Updating customer', customerProperties);
-                updateCustomer(customerProperties, callback);
+                updateCustomer(customerProperties, successCallback, errorCallback);
             });
         }
 
@@ -276,17 +359,21 @@
 			if (eventProperties == null) {
 				eventProperties = {};
 			}
-            enqueue(function(callback) {
+			var rawTimestamp:Number = getTimestamp();
+            enqueue(function(successCallback, errorCallback) {
                 var event = {
                     customer_ids: config.customer,
                     company_id: config.token,
                     type: eventType,
+					timestamp: rawTimestamp + timestampOffset,
                     properties: extend({}, defaultProperties, eventProperties || {})
                 };
                 debug('Tracking event: ' + eventType, eventProperties);
 				
 				var req:URLRequest = prepareRequest('/crm/events', event);
-				loadRequest(req, callback);
+				loadRequest(req, function(data) {
+					successCallback();
+				}, errorCallback);
             });
         }
 
@@ -301,54 +388,18 @@
                 if (typ == 'Array') campaigns = arguments[i];
                 if (typ == 'String') campaigns = [arguments[i]];
             }
-            enqueue(function(callback) {
+            enqueue(function(successCallback, errorCallback) {
                 var ajaxCallback = function(response) {
                     var arg = (campaigns.length == 1) ? response[campaigns[0]] : response;
                     evaluationCallback(arg);
-                    callback();
+                    successCallback();
                 };
                 debug('Evaluating customer: ', customerProperties);
                 var evaluation = getCustomerJson(customerProperties);
                 evaluation['campaigns'] = campaigns;
 				
 				var req:URLRequest = prepareRequest('/campaigns/automated/evaluate', evaluation);
-				
-				var loader:URLLoader = new URLLoader();
-				var httpStatus = null;
-				loader.addEventListener('httpResponseStatus', function(ev) {
-					httpStatus = ev.status;
-					debug('Received response status code: ', httpStatus);
-				});
-				loader.addEventListener('complete', function(ev) {
-					debug('Received response: ', loader.data);
-					if (httpStatus !== null && httpStatus != 200) {
-						callback();
-						if (httpStatus == 0) {
-							offline();
-						}
-						return;
-					}
-					var parsed:Object;
-					try {
-						parsed = fromJSON(loader.data);
-					}
-					catch (error:Error) {
-						debug('Error parsing JSON response');
-						callback();
-						return;
-					}
-					ajaxCallback(parsed.data);
-				});
-				loader.addEventListener('ioError', function(ev) {
-					debug('Cannot connect to server.');
-					offline();
-					callback();
-				});
-				loader.addEventListener('securityError', function(ev) {
-					debug('Cannot connect to server due to security error.');
-					callback();
-				});
-				loader.load(req);
+				loadRequest(req, ajaxCallback, errorCallback);
             });
         }
 
