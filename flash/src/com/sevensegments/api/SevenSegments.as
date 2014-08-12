@@ -30,7 +30,6 @@
 				customer: {
 					cookie: getCookie()
 				},
-				project: 'default',
 				ping: {
 					enabled: true,
 					interval: 2 * 60
@@ -268,21 +267,12 @@
             });
         }
 
-        public function project(project:String) {
-             enqueue(function(callback) {
-                 config.project = project;
-                 debug('Switching project: ' + project);
-                 callback();
-            });
-        }
-
         public function track(eventType:String, eventProperties:Object = null) {
 			if (eventProperties == null) {
 				eventProperties = {};
 			}
             enqueue(function(callback) {
                 var event = {
-                    project_id: config.project,
                     customer_ids: config.customer,
                     company_id: config.token,
                     type: eventType,
