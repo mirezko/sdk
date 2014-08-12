@@ -1,5 +1,6 @@
 <DOMDocument xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" backgroundColor="#0000FF" currentTimeline="1" xflVersion="2.4" creatorInfo="Adobe Flash Professional CC" platform="Windows" versionInfo="Saved by Adobe Flash Windows 13.1 build 226" majorVersion="13" minorVersion="1" buildNumber="226" objectsSnapTo="false" nextSceneIdentifier="2" playOptionsPlayLoop="false" playOptionsPlayPages="false" playOptionsPlayFrameActions="false" filetypeGUID="DD0DDBBF-5BEF-45B2-9F24-A3048D2A676F">
      <symbols>
+          <Include href="clearbutton.xml" itemIcon="0" itemID="53e9d3a9-00000007" lastModified="1407833015"/>
           <Include href="Symbol 1.xml" itemIcon="0" loadImmediate="false" itemID="52fcef37-00000014" lastModified="1392308023"/>
           <Include href="Symbol 2.xml" itemIcon="0" loadImmediate="false" itemID="52fcef66-00000017" lastModified="1392308070"/>
      </symbols>
@@ -16,23 +17,26 @@ testbutton.addEventListener('click', function() {
 	trace('test');
 	var _7S = new SevenSegments();
 	_7S.initialize({
-		token: '62b531f4-94c0-11e3-b9db-d43d7ed6cb60',
-		target: 'http://dev.7segments.com:5010',
+		token: '',
+		target: 'http://api.7segments.com',
 		debug: true,
 		customer: {registered:'tomas2'},
 		ping: {
-			interval: 5
+			interval: 5,
+			properties: {
+				age: 38
+			}
 		}
 	});
 	_7S.track('almost-purchase', {
 		product: 'test',
 		other: 'my property'
 	});
-	/*_7S.track('test2');
-	_7S.identify('marian galik');
+	_7S.track('test2');
+	_7S.identify('marian galikS');
 	_7S.track('test3');
-	_7S.update({meno: 'nieco', priezvisko: 'nieco2'});
-	_7S.identify('ine meno', {galik: 47});*/
+	_7S.update({first_name: 'nieco', last_name: 'nieco2'});
+	_7S.identify('ine meno', {galik: 47});
 	_7S.evaluate([], function(o:*) {
 		trace('vratil1', JSON.stringify(o));
 	});
@@ -54,6 +58,12 @@ testbutton.addEventListener('click', function() {
 		interval: 2
 	});
 	
+});
+
+clrbutton.addEventListener('click', function() {
+	var so:SharedObject  = SharedObject.getLocal('__7S_etc__');
+	so.clear();
+	so.flush();
 });]]></script>
                                    </Actionscript>
                                    <elements>
@@ -65,6 +75,14 @@ testbutton.addEventListener('click', function() {
                                                   <Point x="106.5" y="37.5"/>
                                              </transformationPoint>
                                         </DOMSymbolInstance>
+                                        <DOMSymbolInstance libraryItemName="clearbutton" name="clrbutton" selected="true" symbolType="button">
+                                             <matrix>
+                                                  <Matrix tx="225.5" ty="226.5"/>
+                                             </matrix>
+                                             <transformationPoint>
+                                                  <Point/>
+                                             </transformationPoint>
+                                        </DOMSymbolInstance>
                                    </elements>
                               </DOMFrame>
                          </frames>
@@ -74,25 +92,25 @@ testbutton.addEventListener('click', function() {
      </timelines>
      <PrinterSettings/>
      <publishHistory>
-          <PublishItem publishSize="4409" publishTime="1392386935"/>
-          <PublishItem publishSize="4389" publishTime="1392386057"/>
-          <PublishItem publishSize="4398" publishTime="1392385965"/>
-          <PublishItem publishSize="4375" publishTime="1392385792"/>
-          <PublishItem publishSize="4377" publishTime="1392385759"/>
-          <PublishItem publishSize="4372" publishTime="1392385734"/>
-          <PublishItem publishSize="4318" publishTime="1392385385"/>
-          <PublishItem publishSize="4074" publishTime="1392382687"/>
-          <PublishItem publishSize="4073" publishTime="1392382671"/>
-          <PublishItem publishSize="3975" publishTime="1392381577"/>
-          <PublishItem publishSize="3964" publishTime="1392381338"/>
-          <PublishItem publishSize="3955" publishTime="1392381284"/>
-          <PublishItem publishSize="3915" publishTime="1392380057"/>
-          <PublishItem publishSize="3936" publishTime="1392376662"/>
-          <PublishItem publishSize="4012" publishTime="1392376538"/>
-          <PublishItem publishSize="3992" publishTime="1392376324"/>
-          <PublishItem publishSize="3993" publishTime="1392376264"/>
-          <PublishItem publishSize="3992" publishTime="1392376211"/>
-          <PublishItem publishSize="3905" publishTime="1392375754"/>
-          <PublishItem publishSize="3905" publishTime="1392375618"/>
+          <PublishItem publishSize="5372" publishTime="1407842861"/>
+          <PublishItem publishSize="5369" publishTime="1407842756"/>
+          <PublishItem publishSize="5369" publishTime="1407842701"/>
+          <PublishItem publishSize="7276" publishTime="1407842565" publishDebug="true"/>
+          <PublishItem publishSize="7276" publishTime="1407842370" publishDebug="true"/>
+          <PublishItem publishSize="5381" publishTime="1407842256"/>
+          <PublishItem publishSize="5380" publishTime="1407842200"/>
+          <PublishItem publishSize="5381" publishTime="1407842143"/>
+          <PublishItem publishSize="5370" publishTime="1407842037"/>
+          <PublishItem publishSize="5345" publishTime="1407841766"/>
+          <PublishItem publishSize="5332" publishTime="1407841127"/>
+          <PublishItem publishSize="5332" publishTime="1407841121"/>
+          <PublishItem publishSize="5332" publishTime="1407840966"/>
+          <PublishItem publishSize="5332" publishTime="1407840860"/>
+          <PublishItem publishSize="237" publishTime="1407840844"/>
+          <PublishItem publishSize="5329" publishTime="1407840729"/>
+          <PublishItem publishSize="5329" publishTime="1407840649"/>
+          <PublishItem publishSize="5283" publishTime="1407840428"/>
+          <PublishItem publishSize="5273" publishTime="1407840125"/>
+          <PublishItem publishSize="237" publishTime="1407840103"/>
      </publishHistory>
 </DOMDocument>

@@ -1,0 +1,27 @@
+<DOMSymbolItem xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://ns.adobe.com/xfl/2008/" name="clearbutton" itemID="53e9d3a9-00000007" linkageExportForAS="true" linkageClassName="clearbutton" symbolType="button" lastModified="1407833015">
+  <timeline>
+    <DOMTimeline name="clearbutton">
+      <layers>
+        <DOMLayer name="Layer 1" color="#4F80FF" current="true" isSelected="true">
+          <frames>
+            <DOMFrame index="0" keyMode="9728">
+              <elements>
+                <DOMShape>
+                  <fills>
+                    <FillStyle index="1">
+                      <SolidColor color="#FF0000"/>
+                    </FillStyle>
+                  </fills>
+                  <edges>
+                    <Edge fillStyle1="1" edges="!4780 430S2[4780 1014 3558 1427!3558 1427[2337 1840 610 1840!610 1840[-1117 1840 -2339 1427!-2339 1427[-3560 1014 -3560 430!-3560 430[-3560 -154 -2339 -567!-2339 -567[-1117 -980 610 -980!610 -980[2337 -980 3558 -567!3558 -567[4780 -154
+ 4780 430"/>
+                  </edges>
+                </DOMShape>
+              </elements>
+            </DOMFrame>
+          </frames>
+        </DOMLayer>
+      </layers>
+    </DOMTimeline>
+  </timeline>
+</DOMSymbolItem>
