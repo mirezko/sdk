@@ -32,7 +32,8 @@
 				},
 				ping: {
 					enabled: true,
-					interval: 2 * 60
+					interval: 2 * 60,
+					properties: {}
 				},
 				debug: false
 			};
@@ -162,10 +163,14 @@
 			trace('7S [' + date + '] ' + message);
 			if (data !== undefined) trace(toJSON(data));
 		}
+		
+		private function getPingParams():Object {
+			return this.extend({}, this.config.ping.properties);
+		}
 
 		private function sendPing() {
 			if (config.ping.enabled) {
-				this.track('customer_ping', {});
+				this.track('customer_ping', this.getPingParams());
 			}
 		}
 
