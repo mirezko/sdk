@@ -50,19 +50,16 @@ You can also update information that is stored with a customer.
 client.update({'first_name': 'John', 'last_name': 'Smith'})
 ```
 
-## Evaluating automated campaigns
+## Getting HTML from campaign
 
 ```python
-client.evaluate(['campaign1', 'campaign2'])
+client.get_html('Banner left')
 ```
 
 will return
 
 ```python
-{
-  'campaign1': {'success': True, 'errors': []},
-  'campaign2': {'success': True, 'errors': []}
-}
+'<img src="/my-awesome-banner-1.png" />'
 ```
 
 ## Using on the command line
@@ -79,6 +76,52 @@ CUSTOMER='john123'
 # Update customer properties
 ./seven_segments.py update "$COMPANY_TOKEN" "$CUSTOMER" first_name=John last_name=Smith
 
-# Evaluate automated campaign
-./seven_segments.py evaluate "$COMPANY_TOKEN" "$CUSTOMER" campaign1 campaign2
+# Get HTML from campaign
+./seven_segments.py get_html "$COMPANY_TOKEN" "$CUSTOMER" banner
+```
+
+# 7SEGMENTS python Authenticated API client
+
+The `seven_segments.AuthenticatedSevenSegments` class provides access to the 7SEGMENTS
+synchronous python authenticated API. In order to export analyses you have to instantiate client
+with username and password of user that has ExtAPI access:
+
+```python
+from seven_segments import SevenSegments
+
+client = AuthenticatedSevenSegments('username', 'password')
+```
+
+## Exporting analyses
+
+First argument is type of analysis (funnel, report, retention, segmentation), second argument is JSON in format documented at https://docs.7segments.com/technical-guide/export-api/
+In case that authenticated customer has access to multiple companies use keyword argument token=token_of_company_with_given_analysis
+
+```python
+client.export_analysis('funnel', {
+    'analysis_id': '2f86608f-24f5-11e3-9950-c48508494cf5'
+})
+```
+
+will return
+
+```python
+{
+    "success": true,
+    "name": "Conversion funnel",
+    "steps": ["First visit", "Registration", "First log in", "Purchase", "Payment"],
+    "total": {
+        "counts": [48632, 24120, 20398, 1256, 1250],
+        "times": [-1, 680, 4502, 45, 540, 300],
+        "metric": 1987562
+    },
+    "drill_down": {
+        "type": "none",
+        "series": []
+    },
+    "metric": {
+        "step": 4,
+        "property": "price"
+    }
+}
 ```
