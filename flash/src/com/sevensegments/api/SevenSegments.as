@@ -377,32 +377,6 @@
             });
         }
 
-        public function evaluate(... arguments):void {
-            var campaigns:* = [];
-            var customerProperties:* = {};
-            var evaluationCallback:* = function (arg:*):* {};
-            for (var i:int = 0; i < arguments.length; i++) {
-				var typ:* = getQualifiedClassName(arguments[i]);
-                if (typ == 'Function') evaluationCallback = arguments[i];
-                if (typ == 'Object') customerProperties = arguments[i];
-                if (typ == 'Array') campaigns = arguments[i];
-                if (typ == 'String') campaigns = [arguments[i]];
-            }
-            enqueue(function(successCallback:*, errorCallback:*):* {
-                var ajaxCallback:* = function(response:*):* {
-                    var arg:* = (campaigns.length == 1) ? response[campaigns[0]] : response;
-                    evaluationCallback(arg);
-                    successCallback();
-                };
-                debug('Evaluating customer: ', customerProperties);
-                var evaluation:* = getCustomerJson(customerProperties);
-                evaluation['campaigns'] = campaigns;
-				
-				var req:URLRequest = prepareRequest('/campaigns/automated/evaluate', evaluation);
-				loadRequest(req, ajaxCallback, errorCallback);
-            });
-        }
-
         public function ping(pingConfig:*):void {
             debug('Changing ping configuration: ', pingConfig);
             extend(config.ping, pingConfig);
