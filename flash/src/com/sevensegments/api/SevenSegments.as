@@ -8,27 +8,27 @@
 	
 	public class SevenSegments {
 
-		private const DEFAULT_TARGET = 'http://api.7segments.com';
-		private const TRACKING_COOKIE_KEY = '__7S_etc__';
-		private const ONLINE_CHECK_DELAY = 10 * 60; // 10 min
+		private const DEFAULT_TARGET:String = 'http://api.7segments.com';
+		private const TRACKING_COOKIE_KEY:String = '__7S_etc__';
+		private const ONLINE_CHECK_DELAY:int = 10 * 60; // 10 min
 		
 		private var initialized:Boolean = false;
 		private var timeInitialized:Boolean = false;
 		private var config:Object;
-		private var defaultProperties = {};
-		private var processing = false;
-		private var queue = [];
+		private var defaultProperties:* = {};
+		private var processing:Boolean = false;
+		private var queue:Array = [];
 		private var pingTimer:Timer = null;
 		private var isOnline:Boolean = true;
 		private var onlineCheckTimer:Timer = null;
 		private var lastCommand:Function = null;
-		private var resendTimeoutBase = 1000;
-		private var resendTimeout = resendTimeoutBase;
-		private var resendTimeoutFactor = 2;
-		private var resendTimeoutMax = 60 * 60 * 1000;
-		private var lastUsedTimestamp = null;
-		private var duplicateTimestampIncrement = 0.001;
-		private var timestampOffset = 0; // server timestamp - client timestamp
+		private var resendTimeoutBase:int = 1000;
+		private var resendTimeout:int = resendTimeoutBase;
+		private var resendTimeoutFactor:int = 2;
+		private var resendTimeoutMax:int = 60 * 60 * 1000;
+		private var lastUsedTimestamp:* = null;
+		private var duplicateTimestampIncrement:Number = 0.001;
+		private var timestampOffset:int = 0; // server timestamp - client timestamp
 		private var resendTimer:Timer = null;
 		
 		public function SevenSegments() {
@@ -49,10 +49,10 @@
 			};
 		}
 
-		private function guid() {
-            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-                var r = Math.random() * 16 | 0;
-                var v = (c == 'x') ? r : (r & 0x3 | 0x8);
+		private function guid():* {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c:*):* {
+                var r:* = Math.random() * 16 | 0;
+                var v:* = (c == 'x') ? r : (r & 0x3 | 0x8);
                 return v.toString(16);
             });
         }
@@ -66,7 +66,7 @@
 			return so.data.cookie;
 		}
 		
-		private function processNext() {
+		private function processNext():void {
 			if (!isOnline && lastCommand !== null) {
 				queue.unshift(lastCommand);
 				lastCommand = null;
@@ -82,13 +82,13 @@
 			lastCommand();
 		}
 		
-		private function processedSuccess() {
+		private function processedSuccess():void {
 			queue.shift();
 			resendTimeout = resendTimeoutBase;
 			processNext();
 		}
 		
-		private function retryResend(action:Function) {
+		private function retryResend(action:Function):void {
 			resendTimeout *= resendTimeoutFactor;
 			if (resendTimeout > resendTimeoutMax) {
 				resendTimeout = resendTimeoutMax;
@@ -99,7 +99,7 @@
 				resendTimer = null;
 			}
 			resendTimer = new Timer(resendTimeout, 1);
-			resendTimer.addEventListener('timer', function() {
+			resendTimer.addEventListener('timer', function():* {
 				resendTimer.stop();
 				resendTimer = null;
 				action();
@@ -107,11 +107,11 @@
 			resendTimer.start();
 		}
 		
-		private function processedError() {
+		private function processedError():void {
 			retryResend(processNext);
 		}
 
-		private function processQueue() {
+		private function processQueue():void {
 			if (!isOnline) return;
 			if (!timeInitialized) return;
 			if (processing) return;
@@ -119,32 +119,32 @@
 			processNext();
 		}
 
-		private function enqueue(processor) {
-			queue.push(function() {
+		private function enqueue(processor:*):void {
+			queue.push(function():* {
 				processor(processedSuccess, processedError);
 			});
 			if (initialized) processQueue();
 		}
 		
-		private function queryTime() {
+		private function queryTime():void {
 			if (timeInitialized) return;
 			
-			var clientTS = getTimestamp();
+			var clientTS:* = getTimestamp();
 			
 			var req:URLRequest = new URLRequest();
 			req.method = 'GET';
 			req.url = config.target + '/system/time?clientTS=' + clientTS;
 			
-			loadRequest(req, function(json) {
-				var serverTS = json.time;
-				var clientTS2 = getTimestamp();
-				var avgClientTS = clientTS2 - (clientTS2 - clientTS) / 2;
+			loadRequest(req, function(json:*):* {
+				var serverTS:* = json.time;
+				var clientTS2:* = getTimestamp();
+				var avgClientTS:* = clientTS2 - (clientTS2 - clientTS) / 2;
 				timestampOffset = serverTS - avgClientTS;
 				debug('time offset is ' + timestampOffset);
 				resendTimeout = resendTimeoutBase;
 				timeInitialized = true;
 				processQueue();
-			}, function() {
+			}, function():* {
 				retryResend(queryTime);
 			});
 		}
@@ -158,7 +158,7 @@
 			return now;
 		}
 
-		private function preProcessCustomerIds(options:Object) {
+		private function preProcessCustomerIds(options:Object):void {
 			if (options.customer is String) {
 				options.customer = {registered: options.customer};
 			}
@@ -168,7 +168,7 @@
 			}
 		}
 
-		private function getCustomerJson(properties) {
+		private function getCustomerJson(properties:*):* {
 			return {
 				ids: config.customer,
 				company_id: config.token,
@@ -176,11 +176,11 @@
 			};
 		}
 
-		private function toJSON(o:Object) {
+		private function toJSON(o:Object):String {
 			return JSON.stringify(o);
 		}
 		
-		private function fromJSON(s:String) {
+		private function fromJSON(s:String):Object {
 			return JSON.parse(s);
 		}
 		
@@ -193,14 +193,14 @@
 			return req;
 		}
 		
-		private function loadRequest(req:URLRequest, successCallback:Function, errorCallback:Function) {
+		private function loadRequest(req:URLRequest, successCallback:Function, errorCallback:Function):void {
 			var loader:URLLoader = new URLLoader();
-			var httpStatus = null;
-			loader.addEventListener('httpResponseStatus', function(ev) {
+			var httpStatus:* = null;
+			loader.addEventListener('httpResponseStatus', function(ev:*):* {
 				httpStatus = ev.status;
 				debug('Received response status code: ', httpStatus);
 			});
-			loader.addEventListener('complete', function(ev) {
+			loader.addEventListener('complete', function(ev:*):void {
 				debug('Received response: ', loader.data);
 				if (httpStatus !== null && httpStatus != 200) {
 					if (config.offlineOnError && httpStatus == 0) {
@@ -220,29 +220,29 @@
 				}
 				successCallback(parsed);
 			});
-			loader.addEventListener('ioError', function(ev) {
+			loader.addEventListener('ioError', function(ev:*):* {
 				debug('Cannot connect to server.');
 				if (config.offlineOnError) offline();
 				errorCallback();
 			});
-			loader.addEventListener('securityError', function(ev) {
+			loader.addEventListener('securityError', function(ev:*):* {
 				debug('Cannot connect to server due to security error.');
 				errorCallback();
 			});
 			loader.load(req);
 		}
 		
-		private function updateCustomer(customerProperties:Object, successCallback:Function, errorCallback:Function) {
-			var customer = getCustomerJson(customerProperties);
+		private function updateCustomer(customerProperties:Object, successCallback:Function, errorCallback:Function):void {
+			var customer:* = getCustomerJson(customerProperties);
 			var req:URLRequest = prepareRequest('/crm/customers', customer);
-			loadRequest(req, function(data) {
+			loadRequest(req, function(data:*):* {
 				successCallback();
 			}, errorCallback);
 		}
 
-		private function debug(message:String, data:* = undefined) {
+		private function debug(message:String, data:* = undefined):void {
 			if (!config.debug) return;
-			var date = (new Date()).toUTCString();
+			var date:* = (new Date()).toUTCString();
 			trace('7S [' + date + '] ' + message);
 			if (data !== undefined) trace(toJSON(data));
 		}
@@ -251,40 +251,40 @@
 			return this.extend({}, this.config.ping.properties);
 		}
 
-		private function sendPing() {
+		private function sendPing():void {
 			if (config.ping.enabled) {
 				this.track('customer_ping', this.getPingParams());
 			}
 		}
 
-		private function setupPingTimer() {
+		private function setupPingTimer():void {
 			if (pingTimer != null) {
 				pingTimer.stop();
 				pingTimer = null;
 			}
 			if (config.ping.enabled && isOnline) {
 				pingTimer = new Timer(config.ping.interval * 1000);
-				pingTimer.addEventListener('timer', function() {
+				pingTimer.addEventListener('timer', function():* {
 					sendPing();
 				});
 				pingTimer.start();
 			}
 		}
 		
-		private function pingCallback(successCallback:Function, errorCallback:Function) {
+		private function pingCallback(successCallback:Function, errorCallback:Function):void {
 			sendPing();
 			setupPingTimer();
 			successCallback();
 		}
 		
-		private function setupOnlineCheckTimer() {
+		private function setupOnlineCheckTimer():void {
 			if (onlineCheckTimer != null) {
 				onlineCheckTimer.stop();
 				onlineCheckTimer = null;
 			}
 			if (!isOnline) {
 				onlineCheckTimer = new Timer(ONLINE_CHECK_DELAY * 1000, 1);
-				onlineCheckTimer.addEventListener('timer', function() {
+				onlineCheckTimer.addEventListener('timer', function():* {
 					online();
 				});
 				onlineCheckTimer.start();
@@ -293,7 +293,7 @@
 		
 		private function extend(... args):Object {
 			for (var i:int = 1; i < args.length; i++) {
-				for (var key in args[i]) {
+				for (var key:* in args[i]) {
 					if (args[i][key] == null) continue;
 					if (args[0][key] === args[i][key]) continue;					
 					
@@ -311,7 +311,7 @@
 			return args[0];
 		}
 		
-		public function initialize(options:Object) {
+		public function initialize(options:Object):void {
 			if (initialized) {
 				trace('7S already initialized');
 				return;
@@ -329,7 +329,7 @@
             queryTime();
         }
 
-        public function identify(customerIds:Object = null, customerProperties:Object = null) {
+        public function identify(customerIds:Object = null, customerProperties:Object = null):void {
             if (customerIds != null) {
                 if (customerIds is String) {
                     customerIds = {registered: customerIds};
@@ -339,7 +339,7 @@
 				customerIds = {};
 			}
 			if (customerProperties == null) customerProperties = {};
-            enqueue(function(successCallback, errorCallback) {
+            enqueue(function(successCallback:*, errorCallback:*):* {
                 customerIds['cookie'] = config.customer.cookie;
                 config.customer = customerIds;
                 debug('Identifying customer: ', customerIds);
@@ -348,20 +348,20 @@
             });
         }
 
-        public function update(customerProperties:Object) {
-            enqueue(function(successCallback, errorCallback) {
+        public function update(customerProperties:Object):void {
+            enqueue(function(successCallback:*, errorCallback:*):* {
                 debug('Updating customer', customerProperties);
                 updateCustomer(customerProperties, successCallback, errorCallback);
             });
         }
 
-        public function track(eventType:String, eventProperties:Object = null) {
+        public function track(eventType:String, eventProperties:Object = null):void {
 			if (eventProperties == null) {
 				eventProperties = {};
 			}
 			var rawTimestamp:Number = getTimestamp();
-            enqueue(function(successCallback, errorCallback) {
-                var event = {
+            enqueue(function(successCallback:*, errorCallback:*):* {
+                var event:* = {
                     customer_ids: config.customer,
                     company_id: config.token,
                     type: eventType,
@@ -371,31 +371,31 @@
                 debug('Tracking event: ' + eventType, eventProperties);
 				
 				var req:URLRequest = prepareRequest('/crm/events', event);
-				loadRequest(req, function(data) {
+				loadRequest(req, function(data:*):* {
 					successCallback();
 				}, errorCallback);
             });
         }
 
-        public function evaluate(... arguments) {
-            var campaigns = [];
-            var customerProperties = {};
-            var evaluationCallback = function (arg) {};
-            for (var i = 0; i < arguments.length; i++) {
-				var typ = getQualifiedClassName(arguments[i]);
+        public function evaluate(... arguments):void {
+            var campaigns:* = [];
+            var customerProperties:* = {};
+            var evaluationCallback:* = function (arg:*):* {};
+            for (var i:int = 0; i < arguments.length; i++) {
+				var typ:* = getQualifiedClassName(arguments[i]);
                 if (typ == 'Function') evaluationCallback = arguments[i];
                 if (typ == 'Object') customerProperties = arguments[i];
                 if (typ == 'Array') campaigns = arguments[i];
                 if (typ == 'String') campaigns = [arguments[i]];
             }
-            enqueue(function(successCallback, errorCallback) {
-                var ajaxCallback = function(response) {
-                    var arg = (campaigns.length == 1) ? response[campaigns[0]] : response;
+            enqueue(function(successCallback:*, errorCallback:*):* {
+                var ajaxCallback:* = function(response:*):* {
+                    var arg:* = (campaigns.length == 1) ? response[campaigns[0]] : response;
                     evaluationCallback(arg);
                     successCallback();
                 };
                 debug('Evaluating customer: ', customerProperties);
-                var evaluation = getCustomerJson(customerProperties);
+                var evaluation:* = getCustomerJson(customerProperties);
                 evaluation['campaigns'] = campaigns;
 				
 				var req:URLRequest = prepareRequest('/campaigns/automated/evaluate', evaluation);
@@ -403,20 +403,20 @@
             });
         }
 
-        public function ping(pingConfig) {
+        public function ping(pingConfig:*):void {
             debug('Changing ping configuration: ', pingConfig);
             extend(config.ping, pingConfig);
 			enqueue(pingCallback);
         }
 		
-		private function offline() {
+		private function offline():void {
 			debug('We are offline, suspending queue');
 			isOnline = false;
 			setupPingTimer();
 			setupOnlineCheckTimer();
 		}
 		
-		private function online() {
+		private function online():void {
 			debug('Resuming queue processing');
 			isOnline = true;
 			setupPingTimer();
